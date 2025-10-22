@@ -1,0 +1,85 @@
+# Schema Template for Ticket Section Keys
+#
+# This defines the standardized section keys used to break down ticket data
+# into semantic chunks for embedding and retrieval.
+#
+# Each section represents a distinct piece of information that can be
+# independently embedded and searched.
+
+sections:
+  # Core issue information
+  issue_summary:
+    description: "Brief one-line summary of the issue"
+    source_fields: ["summary", "title", "subject"]
+    required: true
+    
+  issue_description:
+    description: "Detailed description of the issue"
+    source_fields: ["description", "details", "body"]
+    required: false
+    
+  # Reproduction and diagnostics
+  steps_to_reproduce:
+    description: "Steps to reproduce the issue"
+    source_fields: ["steps_to_reproduce", "reproduction_steps", "how_to_reproduce"]
+    required: false
+    
+  root_cause:
+    description: "Root cause analysis or diagnosis"
+    source_fields: ["root_cause", "cause", "analysis", "diagnosis"]
+    required: false
+    
+  # Resolution information
+  resolution:
+    description: "How the issue was resolved or fixed"
+    source_fields: ["resolution", "solution", "fix", "workaround"]
+    required: false
+    
+  # Metadata
+  priority:
+    description: "Priority level and justification"
+    source_fields: ["priority", "severity", "urgency"]
+    required: false
+    
+  # Comments and discussions
+  comments:
+    description: "Comments, notes, and discussion threads"
+    source_fields: ["comments", "notes", "discussion"]
+    required: false
+    multiple: true  # Can have multiple comment sections
+    
+# Field mappings for common data sources
+field_mappings:
+  # Standard JIRA export
+  jira:
+    issue_summary: "Summary"
+    issue_description: "Description"
+    steps_to_reproduce: "Steps to Reproduce"
+    root_cause: "Root Cause"
+    resolution: "Resolution"
+    priority: "Priority"
+    comments: "Comment"
+    
+  # Generic CSV format
+  csv:
+    issue_summary: "summary"
+    issue_description: "description"
+    priority: "priority"
+    
+  # JSONL format
+  jsonl:
+    issue_summary: "summary"
+    issue_description: "description"
+    steps_to_reproduce: "steps_to_reproduce"
+    root_cause: "root_cause"
+    resolution: "resolution"
+    priority: "priority"
+    comments: "comments"
+
+# Preprocessing rules
+preprocessing:
+  min_length: 10  # Minimum characters for a section to be included
+  max_length: 5000  # Maximum characters (truncate if longer)
+  strip_html: true  # Remove HTML tags
+  normalize_whitespace: true  # Normalize spaces and newlines
+

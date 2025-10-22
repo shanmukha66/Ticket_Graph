@@ -1,0 +1,2 @@
+"""Graph RAG Backend Application."""
+
