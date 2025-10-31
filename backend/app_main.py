@@ -348,7 +348,7 @@ async def get_subgraph(
                 ticket = record['t']
                 ticket_id = ticket['id']
                 
-                # Add ticket node
+                # Add ticket node with full information
                 ticket_nodes[ticket_id] = {
                     'data': {
                         'id': ticket_id,
@@ -358,6 +358,10 @@ async def get_subgraph(
                         'project': ticket.get('project', ''),
                         'status': ticket.get('status', ''),
                         'priority': ticket.get('priority', ''),
+                        'summary': ticket.get('summary', ''),  # Full summary
+                        'text': ticket.get('text_for_rag', ''),  # Full ticket description/text
+                        'created': ticket.get('created', ''),
+                        'updated': ticket.get('updated', ''),
                         'score': 1.0  # Base score, will be updated from vector search
                     }
                 }

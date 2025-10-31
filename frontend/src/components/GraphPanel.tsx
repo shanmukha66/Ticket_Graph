@@ -6,6 +6,7 @@ import { ZoomIn, ZoomOut, Maximize2, LayoutGrid } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { SubgraphResponse } from '../lib/api';
 import { ClusterLegend } from './ClusterLegend';
+import { TicketDetailsPanel } from './TicketDetailsPanel';
 
 // Register layout
 cytoscape.use(coseBilkent);
@@ -36,6 +37,7 @@ export function GraphPanel({ data, isLoading, selectedTicketId, onTicketClick }:
   const cyRef = useRef<Core | null>(null);
   const [selectedCluster, setSelectedCluster] = useState<number | null>(null);
   const [layout, setLayout] = useState<'cose-bilkent' | 'circle' | 'grid'>('cose-bilkent');
+  const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
 
   // Initialize Cytoscape
   useEffect(() => {
@@ -211,22 +213,28 @@ export function GraphPanel({ data, isLoading, selectedTicketId, onTicketClick }:
       node.addClass('highlighted');
       neighbors.addClass('highlighted');
       
-      // If it's a ticket node, trigger callback
-      if (node.data('type') === 'Ticket' && onTicketClick) {
-        onTicketClick(node.data('id'));
-      }
-      
-      // Log info to console for debugging
+      // If it's a ticket node, show details
       if (node.data('type') === 'Ticket') {
-        console.log('Ticket Details:', {
+        const ticketDetails = {
           id: node.data('id'),
           project: node.data('project'),
           status: node.data('status'),
           priority: node.data('priority'),
+          summary: node.data('summary'),
+          text: node.data('text'),
           communityId: node.data('communityId'),
           score: node.data('score'),
-          connections: node.degree()
-        });
+        };
+        
+        setSelectedTicketDetails(ticketDetails);
+        
+        // Trigger callback if provided
+        if (onTicketClick) {
+          onTicketClick(node.data('id'));
+        }
+        
+        // Log for debugging
+        console.log('Ticket Details:', ticketDetails);
       }
     });
 
@@ -362,9 +370,10 @@ export function GraphPanel({ data, isLoading, selectedTicketId, onTicketClick }:
   })) || [];
 
   return (
-    <div className="h-full flex flex-col gap-4">
-      {/* Header with controls */}
-      <div className="flex items-center justify-between">
+    <>
+      <div className="h-full flex flex-col gap-4">
+        {/* Header with controls */}
+        <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Knowledge Graph</h3>
           <p className="text-sm text-gray-500">
@@ -440,6 +449,13 @@ export function GraphPanel({ data, isLoading, selectedTicketId, onTicketClick }:
         )}
       </div>
     </div>
+
+    {/* Ticket Details Side Panel */}
+    <TicketDetailsPanel
+      ticket={selectedTicketDetails}
+      onClose={() => setSelectedTicketDetails(null)}
+    />
+  </>
   );
 }
 
