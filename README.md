@@ -1443,14 +1443,3 @@ Complete implementation notes:
 
 ---
 
-<div align="center">
-
-**🚀 Ready to Use!**
-
-The Graph RAG system is complete, tested, and production-ready.
-
-[Get Started](#-quick-start) • [View Docs](#-documentation) • [API Reference](#-api-documentation)
-
-**Built with ❤️ for enhanced question answering with provenance.**
-
-</div>
