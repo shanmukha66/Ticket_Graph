@@ -1,10 +1,89 @@
-# Root .gitignore
+# ============================================
+# Environment Variables (SECURITY CRITICAL)
+# ============================================
 .env
+.env.local
+.env.*.local
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .venv/
 venv/
-*.pyc
-__pycache__/
-.DS_Store
+ENV/
+env/
+
+# ============================================
+# Node.js / Frontend
+# ============================================
 node_modules/
 dist/
+dist-ssr/
+*.local
+
+# ============================================
+# Vector Store / Data Files (LARGE FILES)
+# ============================================
+# FAISS index files - Generated, should not be in git
+*.faiss
+*.index
+faiss_index.faiss
+faiss_index.meta.pkl
+faiss_index/
+*.pkl
+*.pickle
+
+# Data directories and files - Too large for git
+mnt/
+mnt/data/
+*.csv
+*.jsonl
+data/
+*.parquet
+*.arrow
+
+# Model caches
+.cache/
+*.bin
+
+# ============================================
+# IDE / Editor
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ============================================
+# OS
+# ============================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+$RECYCLE.BIN/
+
+# ============================================
+# Logs
+# ============================================
 *.log
+logs/
+
+# ============================================
+# Temporary
+# ============================================
+*.tmp
+*.temp
+*.bak
+
+# ============================================
+# Keep these
+# ============================================
+!.env.example
+!.gitkeep
