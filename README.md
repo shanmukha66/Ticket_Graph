@@ -14,7 +14,9 @@ A complete, enterprise-grade **Graph RAG (Retrieval Augmented Generation)** syst
 ---
 
 ## 📋 Table of Contents
-
+- [Overview](#-overview)
+- [Demo Video](#-demo-video)  <!-- Add this line -->
+- [Key Features](#-key-features)
 - [Overview](#-overview)
 - [Key Features](#-key-features)
 - [System Architecture](#️-system-architecture)
@@ -53,9 +55,21 @@ This system provides **dual answers** to technical support questions, allowing u
 - **Dual Answer Comparison**: See the difference between generic AI and context-aware responses
 - **Full Provenance**: Every answer includes citations to source tickets and sections
 - **Community Detection**: Automatic clustering using Louvain/Leiden algorithms
+- **Production Ready**: Complete with error handling, health checks, and monitoring
 - **Interactive Visualization**: Explore the knowledge graph with Cytoscape.js
 - **Production Ready**: Complete with error handling, health checks, and monitoring
+📺 **[Watch our demo video](https://youtu.be/kG4_gxuNLkg)** to see the system in action!
+## 🎥 Demo Video
 
+<div align="center">
+  
+[![Watch the Demo](https://img.youtube.com/vi/kG4_gxuNLkg/maxresdefault.jpg)](https://youtu.be/kG4_gxuNLkg)
+
+**Click to watch: Graph RAG Application - Complete Walkthrough**
+
+</div>
+
+---
 ---
 
 ## ✨ Key Features
