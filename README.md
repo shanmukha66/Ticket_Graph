@@ -29,6 +29,7 @@ A complete, enterprise-grade **Graph RAG (Retrieval Augmented Generation)** syst
 - [Running the Application](#-running-the-application)
 - [Usage Examples](#-usage-examples)
 - [API Documentation](#-api-documentation)
+- [Clustering Demo](#-clustering-demo)
 - [Frontend Features](#-frontend-features)
 - [Project Structure](#-project-structure)
 - [Troubleshooting](#-troubleshooting)
@@ -84,6 +85,7 @@ This system provides **dual answers** to technical support questions, allowing u
 | 🤖 **Dual Answer System** | General + Graph RAG answers for comparison |
 | 📝 **Ticket Citations** | Inline citations with provenance tracking |
 | 🎯 **Smart Context Retrieval** | Vector search + graph traversal (1-N hops) |
+| 🧪 **Clustering Demo** | Compare K-Means, Agglomerative, and DBSCAN algorithms |
 | ⚡ **FastAPI Backend** | Modern async Python with automatic OpenAPI docs |
 | 🔒 **Health Monitoring** | Real-time status checks for all services |
 
@@ -96,6 +98,7 @@ This system provides **dual answers** to technical support questions, allowing u
 | 🏷️ **Smart Citations** | Automatic highlighting of ticket IDs in answers |
 | 🎯 **Cluster Filtering** | Click clusters to focus on specific communities |
 | 🌈 **Community Colors** | 10-color palette for visual clustering |
+| 🧪 **Clustering Analytics** | Compare clustering algorithms with performance metrics |
 | ⚡ **Parallel Requests** | Simultaneous API calls for faster responses |
 | 📱 **Responsive Design** | Works beautifully on desktop and tablet |
 | 🔄 **Real-time Updates** | Live loading states and smooth transitions |
@@ -789,6 +792,28 @@ In the UI:
 - **Use zoom controls** → zoom in/out/fit to screen
 - **Click layout button** → cycles through layouts (force/circle/grid)
 
+### Test 6: Clustering Demo
+
+1. Open http://localhost:5173
+2. Click the **"Clustering Demo"** tab
+3. Enter a query: "billing issue" or "authentication error"
+4. Select:
+   - **Subset Size**: A (100), B (500), C (1000), or All
+   - **Algorithm**: K-Means, Agglomerative, DBSCAN, or All
+5. Click **"Run Clustering"**
+6. View the comparison table with all metrics:
+   - Computation time
+   - Query time
+   - Total time
+   - Silhouette score
+   - Number of clusters
+   - Average cluster size
+
+**Expected results:**
+- Summary cards showing fastest, best quality, and most clusters
+- Comparison table with all 9 combinations
+- Detailed cluster information for each combination
+
 ---
 
 ## 📚 API Documentation
@@ -860,6 +885,144 @@ See [backend/API_README.md](backend/API_README.md) for complete API documentatio
 
 ---
 
+## 🧪 Clustering Demo
+
+The Clustering Demo feature allows you to compare different clustering algorithms (K-Means, Agglomerative Clustering, and DBSCAN) across different ticket subset sizes (100, 500, 1000 tickets) to analyze performance and cluster quality.
+
+### Features
+
+- **Multiple Subset Sizes**: Compare clustering on 100, 500, or 1000 tickets
+- **Three Algorithms**: K-Means, Agglomerative Clustering, and DBSCAN
+- **Performance Metrics**: Computation time, query time, and total execution time
+- **Quality Metrics**: Silhouette score, number of clusters, average cluster size
+- **Interactive Comparison**: Side-by-side comparison of all 9 combinations
+- **Query-Based Clustering**: Run clustering on tickets relevant to your search query
+
+### Accessing the Demo
+
+1. **Via UI**: 
+   - Open http://localhost:5173
+   - Click on the **"Clustering Demo"** tab
+   - Enter a search query (e.g., "login issue", "billing error")
+   - Select subset size and algorithm (or choose "All" for all combinations)
+   - Click **"Run Clustering"**
+
+2. **Via API**:
+   ```bash
+   curl -X POST http://127.0.0.1:8001/clustering-demo/cluster \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": "login issue",
+       "top_k": 1000,
+       "subset_size": 100,
+       "algorithm": "kmeans"
+     }'
+   ```
+
+### API Endpoints
+
+#### `POST /clustering-demo/cluster`
+Run clustering analysis on tickets relevant to a query.
+
+**Request Body:**
+```json
+{
+  "query": "login issue",
+  "top_k": 1000,
+  "subset_size": 100,      // Optional: 100, 500, 1000, or null for all
+  "algorithm": "kmeans"    // Optional: "kmeans", "agglomerative", "dbscan", or null for all
+}
+```
+
+**Response:**
+```json
+{
+  "query": "login issue",
+  "results": {
+    "A_kmeans": {
+      "subset_size": 100,
+      "algorithm": "kmeans",
+      "num_clusters": 10,
+      "computation_time_ms": 33.86,
+      "query_time_ms": 36.56,
+      "total_time_ms": 70.43,
+      "clusters": [...],
+      "metrics": {
+        "silhouette_score": 0.498,
+        "avg_cluster_size": 10.0
+      }
+    },
+    ...
+  },
+  "summary": {
+    "total_combinations": 9,
+    "fastest": "A_dbscan",
+    "fastest_time_ms": 32.87,
+    "best_quality": "A_dbscan",
+    "best_quality_score": 0.552,
+    "most_clusters": "A_kmeans",
+    "most_clusters_count": 10
+  }
+}
+```
+
+#### `GET /clustering-demo/stats`
+Get statistics about available tickets in Neo4j.
+
+**Response:**
+```json
+{
+  "total_tickets": 5018,
+  "tickets_with_embeddings": 5000,
+  "top_categories": [...],
+  "available_subset_sizes": [100, 500, 1000],
+  "available_algorithms": ["kmeans", "agglomerative", "dbscan"]
+}
+```
+
+### Clustering Algorithms
+
+| Algorithm | Description | Use Case |
+|-----------|-------------|----------|
+| **K-Means** | Partition-based clustering with fixed number of clusters | Fast, good for balanced clusters |
+| **Agglomerative** | Hierarchical clustering with cosine similarity | High quality, precise groupings |
+| **DBSCAN** | Density-based clustering, handles noise | Finds natural clusters, handles outliers |
+
+### Subset Sizes
+
+- **A (100 tickets)**: Fast clustering, good for quick analysis
+- **B (500 tickets)**: Balanced performance and quality
+- **C (1000 tickets)**: Comprehensive analysis, best quality metrics
+
+### Performance Comparison
+
+The demo automatically runs all 9 combinations (3 subset sizes × 3 algorithms) and provides:
+- **Fastest**: Combination with lowest total execution time
+- **Best Quality**: Highest silhouette score
+- **Most Clusters**: Maximum number of clusters found
+
+### Neo4j Queries
+
+For querying clustering results in Neo4j, see [neo4j_clustering_queries.cypher](neo4j_clustering_queries.cypher) for comprehensive Cypher queries.
+
+**Quick Examples:**
+
+```cypher
+// Get all clusters of type A (100 tickets, K-Means)
+MATCH (c:Cluster {type: 'A'})
+RETURN c.id, c.label, c.ticket_count
+ORDER BY c.ticket_count DESC;
+
+// Compare all clustering combinations
+MATCH (c:Cluster)
+RETURN c.type AS subset_type,
+       count(c) AS num_clusters,
+       avg(c.ticket_count) AS avg_cluster_size
+ORDER BY c.type;
+```
+
+---
+
 ## 🎨 Frontend Features
 
 ### Components
@@ -871,6 +1034,8 @@ See [backend/API_README.md](backend/API_README.md) for complete API documentatio
 | **GraphPanel** | Interactive Cytoscape.js visualization |
 | **ClusterLegend** | Community list with filtering |
 | **TicketDetailsPanel** | Detailed ticket information on click |
+| **ClusteringDemo** | Clustering algorithm comparison interface |
+| **ClusterComparison** | Pre-computed cluster comparison view |
 
 ### Design System
 
@@ -1268,6 +1433,9 @@ Get-Process -Id (Get-NetTCPConnection -LocalPort 8001).OwningProcess | Stop-Proc
 | Graph traversal | 200-500ms | 1-2 hops |
 | LLM generation | 3-8s | GPT-4 |
 | **Total query** | **4-9s** | With parallel calls |
+| Clustering (100 tickets) | 30-80ms | K-Means fastest, DBSCAN moderate |
+| Clustering (500 tickets) | 100-300ms | Varies by algorithm |
+| Clustering (1000 tickets) | 200-600ms | Agglomerative slowest |
 
 ### Frontend Performance
 
@@ -1450,6 +1618,7 @@ Complete implementation notes:
 
 ✅ **Backend**: FastAPI + Neo4j + FAISS + E5 + GPT-4  
 ✅ **Frontend**: React + TypeScript + Tailwind + Cytoscape  
+✅ **Clustering Demo**: K-Means, Agglomerative, DBSCAN comparison  
 ✅ **Documentation**: 2000+ lines across 10+ files  
 ✅ **Troubleshooting**: 8+ scenarios covered  
 ✅ **Testing**: Manual test checklist provided  
