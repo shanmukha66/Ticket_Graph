@@ -179,4 +179,65 @@ export async function runIngestion(config: {
   return response.data;
 }
 
+// Cluster search types
+export interface ClusterSearchTicket {
+  ticket_id: string;
+  title: string;
+  similarity: number;
+}
+
+export interface ClusterSearchResult {
+  latency_ms: number;
+  avg_similarity: number;
+  num_candidates_scanned: number;
+  top_k: ClusterSearchTicket[];
+}
+
+export interface ClusterSearchResponse {
+  query: string;
+  results: {
+    cluster_type_a?: ClusterSearchResult;
+    cluster_type_b?: ClusterSearchResult;
+    cluster_type_c?: ClusterSearchResult;
+  };
+  routing_info?: {
+    selected_clusters: string[];
+    explanation: string;
+    analysis: {
+      query_length: number;
+      precision_keywords: number;
+      broad_keywords: number;
+      technical_keywords: number;
+      complexity_score: number;
+    };
+  };
+}
+
+/**
+ * Search tickets using cluster-aware retrieval
+ */
+export async function searchTickets(
+  query: string,
+  top_k: number = 10,
+  options?: {
+    use_smart_routing?: boolean;
+    apply_feedback_boost?: boolean;
+    cluster_types?: ('A' | 'B' | 'C')[];
+  }
+): Promise<ClusterSearchResponse> {
+  const payload: any = {
+    query,
+    top_k,
+    use_smart_routing: options?.use_smart_routing ?? true,
+    apply_feedback_boost: options?.apply_feedback_boost ?? true,
+  };
+
+  if (options?.cluster_types && options.cluster_types.length > 0) {
+    payload.cluster_types = options.cluster_types;
+  }
+
+  const response = await api.post<ClusterSearchResponse>('/search/tickets', payload);
+  return response.data;
+}
+
 export default api;

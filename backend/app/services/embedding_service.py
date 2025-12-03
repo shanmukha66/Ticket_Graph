@@ -2,7 +2,7 @@
 from typing import List, Optional
 import numpy as np
 from sentence_transformers import SentenceTransformer
-from app.core.config import settings
+from backend.app.core.config import settings
 
 
 class EmbeddingService:

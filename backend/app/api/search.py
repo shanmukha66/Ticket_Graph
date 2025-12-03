@@ -1,8 +1,8 @@
 """Search API endpoints."""
 from fastapi import APIRouter, HTTPException
-from app.models.schemas import SearchQuery, SearchResponse, SearchResult
-from app.services.embedding_service import embedding_service
-from app.services.faiss_service import faiss_service
+from backend.app.models.schemas import SearchQuery, SearchResponse, SearchResult
+from backend.app.services.embedding_service import embedding_service
+from backend.app.services.faiss_service import faiss_service
 
 router = APIRouter()
 

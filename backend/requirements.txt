@@ -19,4 +19,6 @@ openai==1.57.4
 # Utilities
 numpy==1.26.4
 scikit-learn==1.6.1
+scipy==1.13.1
+tqdm==4.66.5
 

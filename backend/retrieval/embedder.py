@@ -25,10 +25,13 @@ class Embedder:
         Args:
             model_name: HuggingFace model name (default from env EMBED_MODEL)
         """
-        self.model_name = model_name or env(
-            "EMBED_MODEL",
-            "sentence-transformers/e5-base-v2"
-        )
+        # Prefer EMBED_MODEL from .env, default to correct E5 identifier.
+        # Also fix legacy misconfigurations (sentence-transformers/e5-base-v2).
+        env_model = env("EMBED_MODEL", "intfloat/e5-base-v2")
+        if env_model.strip().lower() == "sentence-transformers/e5-base-v2":
+            # Auto-correct old/wrong identifier to the valid one.
+            env_model = "intfloat/e5-base-v2"
+        self.model_name = model_name or env_model
         self.model = None
         self._dimension = None
     

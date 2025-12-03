@@ -1,7 +1,7 @@
 """Embeddings API endpoints."""
 from fastapi import APIRouter, HTTPException
-from app.models.schemas import EmbeddingRequest, EmbeddingResponse
-from app.services.embedding_service import embedding_service
+from backend.app.models.schemas import EmbeddingRequest, EmbeddingResponse
+from backend.app.services.embedding_service import embedding_service
 
 router = APIRouter()
 

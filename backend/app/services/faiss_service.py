@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 import faiss
 from pathlib import Path
-from app.core.config import settings
+from backend.app.core.config import settings
 
 
 class FAISSService:

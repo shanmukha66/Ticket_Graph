@@ -19,6 +19,8 @@ from backend.ingestors import ingest_all
 from backend.llm.answer import answer_general, answer_graph_rag, retrieve_graph_context
 from backend.graph.build_graph import Neo4jGraph
 from backend.utils.env import env
+from backend.app.api import benchmark
+from backend.app.api import ticket_search
 
 
 # ==============================================================================
@@ -114,6 +116,8 @@ async def root():
             "POST /ingest": "Run complete ingestion pipeline",
             "POST /ask": "Generate dual answers (general + graph RAG)",
             "GET /graph/subgraph": "Get Cytoscape-friendly subgraph",
+            "POST /benchmark/query": "Benchmark query across cluster types",
+            "GET /benchmark/stats": "Get cluster statistics",
             "GET /health": "Health check",
             "GET /docs": "Interactive API documentation",
             "GET /redoc": "ReDoc API documentation"
@@ -473,6 +477,13 @@ async def get_subgraph(
             status_code=500,
             detail=f"Failed to retrieve subgraph: {str(e)}"
         )
+
+
+# Include benchmark router
+app.include_router(benchmark.router)
+
+# Include ticket search router
+app.include_router(ticket_search.router)
 
 
 # ==============================================================================

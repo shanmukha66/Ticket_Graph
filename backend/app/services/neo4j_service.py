@@ -1,7 +1,7 @@
 """Neo4j database service."""
 from typing import List, Dict, Any, Optional
 from neo4j import GraphDatabase, Driver
-from app.core.config import settings
+from backend.app.core.config import settings
 
 
 class Neo4jService:

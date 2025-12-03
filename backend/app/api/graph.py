@@ -1,7 +1,7 @@
 """Graph API endpoints."""
 from typing import Optional
 from fastapi import APIRouter, HTTPException
-from app.models.schemas import (
+from backend.app.models.schemas import (
     NodeCreate,
     RelationshipCreate,
     Node,
@@ -10,7 +10,7 @@ from app.models.schemas import (
     CommunityDetectionRequest,
     CommunityDetectionResponse,
 )
-from app.services.neo4j_service import neo4j_service
+from backend.app.services.neo4j_service import neo4j_service
 
 router = APIRouter()
 

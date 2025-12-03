@@ -16,7 +16,8 @@ class Settings:
     API_RELOAD: bool = True
     
     # Model Configuration
-    EMBEDDING_MODEL: str = env("EMBED_MODEL", "sentence-transformers/e5-base-v2")
+    # Default embedding model (correct E5 identifier)
+    EMBEDDING_MODEL: str = env("EMBED_MODEL", "intfloat/e5-base-v2")
     FAISS_INDEX_PATH: str = env("FAISS_INDEX_PATH", "./faiss_index")
     
     # OpenAI (optional)

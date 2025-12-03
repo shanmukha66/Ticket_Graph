@@ -3,11 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import graph, search, embeddings
-from app.core.config import settings
-from app.services.neo4j_service import neo4j_service
-from app.services.embedding_service import embedding_service
-from app.services.faiss_service import faiss_service
+from backend.app.api import graph, search, embeddings
+from backend.app.core.config import settings
+from backend.app.services.neo4j_service import neo4j_service
+from backend.app.services.embedding_service import embedding_service
+from backend.app.services.faiss_service import faiss_service
 
 
 @asynccontextmanager
