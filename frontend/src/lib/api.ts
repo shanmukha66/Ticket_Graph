@@ -240,4 +240,92 @@ export async function searchTickets(
   return response.data;
 }
 
+// Clustering Demo types
+export interface ClusterInfo {
+  cluster_id: number;
+  ticket_count: number;
+  summary: string;
+  sample_titles: string[];
+}
+
+export interface ClusteringResult {
+  subset_size: number;
+  algorithm: string;
+  num_clusters: number;
+  computation_time_ms: number;
+  query_time_ms: number;
+  total_time_ms: number;
+  clusters: ClusterInfo[];
+  metrics: {
+    algorithm: string;
+    n_clusters?: number;
+    silhouette_score?: number;
+    cluster_sizes?: Record<string, number>;
+    avg_cluster_size?: number;
+    min_cluster_size?: number;
+    max_cluster_size?: number;
+    num_noise_points?: number;
+    eps?: number;
+    min_samples?: number;
+  };
+  ticket_ids: string[];
+}
+
+export interface ClusteringResponse {
+  query: string;
+  results: Record<string, ClusteringResult>; // Key: "A_kmeans", "A_agglomerative", etc.
+  summary: {
+    total_combinations: number;
+    fastest: string;
+    fastest_time_ms: number;
+    best_quality: string;
+    best_quality_score: number;
+    most_clusters: string;
+    most_clusters_count: number;
+  };
+}
+
+export interface ClusteringStats {
+  total_tickets: number;
+  tickets_with_embeddings: number;
+  top_categories: Array<{ category: string; count: number }>;
+  available_subset_sizes: number[];
+  available_algorithms: string[];
+}
+
+/**
+ * Run clustering on tickets relevant to a query
+ * If subsetSize or algorithm is undefined, runs all combinations
+ */
+export async function runClustering(
+  query: string,
+  subsetSize?: number,
+  algorithm?: 'kmeans' | 'agglomerative' | 'dbscan',
+  topK: number = 1000
+): Promise<ClusteringResponse> {
+  const payload: any = {
+    query: query,
+    top_k: topK,
+  };
+  
+  if (subsetSize !== undefined) {
+    payload.subset_size = subsetSize;
+  }
+  
+  if (algorithm !== undefined) {
+    payload.algorithm = algorithm;
+  }
+  
+  const response = await api.post<ClusteringResponse>('/clustering-demo/cluster', payload);
+  return response.data;
+}
+
+/**
+ * Get clustering statistics
+ */
+export async function getClusteringStats(): Promise<ClusteringStats> {
+  const response = await api.get<ClusteringStats>('/clustering-demo/stats');
+  return response.data;
+}
+
 export default api;

@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Network, Sparkles } from 'lucide-react';
 import { Toast, useToast } from './components/ui/toast';
 import ClusterComparison from './components/ClusterComparison';
+import ClusteringDemo from './components/ClusteringDemo';
 
 function App() {
   const { toasts, showToast, removeToast } = useToast();
+  const [activeTab, setActiveTab] = useState<'search' | 'demo'>('demo');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
@@ -47,9 +50,37 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content: Cluster comparison dashboard */}
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b border-gray-200 sticky top-[73px] z-30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('demo')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'demo'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Clustering Demo
+            </button>
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'search'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Cluster Search
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <ClusterComparison />
+        {activeTab === 'demo' ? <ClusteringDemo /> : <ClusterComparison />}
       </main>
 
       {/* Footer */}

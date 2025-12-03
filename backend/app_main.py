@@ -21,6 +21,7 @@ from backend.graph.build_graph import Neo4jGraph
 from backend.utils.env import env
 from backend.app.api import benchmark
 from backend.app.api import ticket_search
+from backend.app.api import clustering_demo
 
 
 # ==============================================================================
@@ -94,7 +95,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -484,6 +485,9 @@ app.include_router(benchmark.router)
 
 # Include ticket search router
 app.include_router(ticket_search.router)
+
+# Include clustering demo router
+app.include_router(clustering_demo.router)
 
 
 # ==============================================================================

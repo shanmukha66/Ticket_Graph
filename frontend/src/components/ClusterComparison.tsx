@@ -11,8 +11,9 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ClusterSearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<'smart' | 'manual'>('smart');
+  const [mode, setMode] = useState<'smart' | 'manual' | 'single'>('single');
   const [selectedClusters, setSelectedClusters] = useState<('A' | 'B' | 'C')[]>(['A', 'B', 'C']);
+  const [selectedClusterType, setSelectedClusterType] = useState<'A' | 'B' | 'C'>('A');
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -30,10 +31,17 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
     setResults(null);
 
     try {
+      let clusterTypes: ('A' | 'B' | 'C')[] | undefined;
+      if (mode === 'single') {
+        clusterTypes = [selectedClusterType];
+      } else if (mode === 'manual') {
+        clusterTypes = selectedClusters;
+      }
+
       const data = await searchTickets(query.trim(), 10, {
         use_smart_routing: mode === 'smart',
         apply_feedback_boost: true,
-        cluster_types: mode === 'manual' ? selectedClusters : undefined,
+        cluster_types: clusterTypes,
       });
       setResults(data);
     } catch (err: any) {
@@ -55,7 +63,10 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
     const badges: string[] = [];
     const results = Object.values(allResults).filter(Boolean);
     
-    if (results.length === 0) return badges;
+    // Badges only make sense when there is something to compare.
+    // If we have fewer than 2 cluster types, skip all badges to avoid
+    // misleading labels like "Fastest" when only one cluster is present.
+    if (results.length < 2) return badges;
 
     // Find fastest
     const fastest = results.reduce((prev, curr) => 
@@ -89,11 +100,11 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
   const getClusterLabel = (type: string) => {
     switch (type) {
       case 'a':
-        return 'Cluster Type A (Coarse)';
+        return 'Cluster Type A (K-Means, ~100 tickets/cluster)';
       case 'b':
-        return 'Cluster Type B (Medium)';
+        return 'Cluster Type B (DBSCAN, ~500 tickets/cluster)';
       case 'c':
-        return 'Cluster Type C (Fine-grained)';
+        return 'Cluster Type C (Agglomerative, ~1000 tickets/cluster)';
       default:
         return `Cluster Type ${type.toUpperCase()}`;
     }
@@ -130,7 +141,18 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
           {/* Mode toggle */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-700">Routing mode:</span>
+              <span className="text-sm font-medium text-gray-700">Search mode:</span>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="radio"
+                  name="routing-mode"
+                  value="single"
+                  checked={mode === 'single'}
+                  onChange={() => setMode('single')}
+                  className="h-4 w-4 text-blue-600"
+                />
+                <span>Single Cluster Type</span>
+              </label>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="radio"
@@ -140,7 +162,7 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
                   onChange={() => setMode('smart')}
                   className="h-4 w-4 text-blue-600"
                 />
-                <span>Smart (auto-select clusters)</span>
+                <span>Smart (auto-select)</span>
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
@@ -151,9 +173,36 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
                   onChange={() => setMode('manual')}
                   className="h-4 w-4 text-blue-600"
                 />
-                <span>Manual (choose clusters)</span>
+                <span>Manual (choose multiple)</span>
               </label>
             </div>
+
+            {mode === 'single' && (
+              <div className="flex items-center gap-3 text-sm text-gray-700">
+                <span className="font-medium">Cluster Type:</span>
+                {(['A', 'B', 'C'] as const).map((c) => (
+                  <label key={c} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="cluster-type"
+                      value={c}
+                      checked={selectedClusterType === c}
+                      onChange={() => setSelectedClusterType(c)}
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className={`px-3 py-1 rounded-lg font-medium transition-colors ${
+                      selectedClusterType === c
+                        ? (c === 'A' ? 'bg-red-100 text-red-700 border-2 border-red-300'
+                        : c === 'B' ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300'
+                        : 'bg-green-100 text-green-700 border-2 border-green-300')
+                        : 'bg-gray-50 text-gray-600 border border-gray-200'
+                    }`}>
+                      {c} {c === 'A' ? '(K-Means, ~100/cluster)' : c === 'B' ? '(DBSCAN, ~500/cluster)' : '(Agglomerative, ~1000/cluster)'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
 
             {mode === 'manual' && (
               <div className="flex items-center gap-3 text-sm text-gray-700">
@@ -185,7 +234,7 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Enter your search query (e.g., 'login issue', 'payment error', 'database timeout')"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white text-gray-900 placeholder:text-gray-500 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={isLoading}
               />
             </div>
@@ -238,41 +287,74 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
         {/* Results Comparison */}
         {results && (
           <div className="space-y-6">
-            {/* Three-column comparison */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Cluster Type A */}
-              {results.results.cluster_type_a && (
-                <ClusterResultCard
-                  clusterType="a"
-                  label={getClusterLabel('a')}
-                  result={results.results.cluster_type_a}
-                  colorClass={getClusterColor('a')}
-                  badges={getBadges('a', results.results)}
-                />
-              )}
+            {mode === 'single' ? (
+              // Single cluster view - full width
+              <div className="max-w-4xl mx-auto">
+                {selectedClusterType === 'A' && results.results.cluster_type_a && (
+                  <ClusterResultCard
+                    clusterType="a"
+                    label={getClusterLabel('a')}
+                    result={results.results.cluster_type_a}
+                    colorClass={getClusterColor('a')}
+                    badges={[]}
+                  />
+                )}
+                {selectedClusterType === 'B' && results.results.cluster_type_b && (
+                  <ClusterResultCard
+                    clusterType="b"
+                    label={getClusterLabel('b')}
+                    result={results.results.cluster_type_b}
+                    colorClass={getClusterColor('b')}
+                    badges={[]}
+                  />
+                )}
+                {selectedClusterType === 'C' && results.results.cluster_type_c && (
+                  <ClusterResultCard
+                    clusterType="c"
+                    label={getClusterLabel('c')}
+                    result={results.results.cluster_type_c}
+                    colorClass={getClusterColor('c')}
+                    badges={[]}
+                  />
+                )}
+              </div>
+            ) : (
+              // Multiple cluster comparison view
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Cluster Type A */}
+                {results.results.cluster_type_a && (
+                  <ClusterResultCard
+                    clusterType="a"
+                    label={getClusterLabel('a')}
+                    result={results.results.cluster_type_a}
+                    colorClass={getClusterColor('a')}
+                    badges={getBadges('a', results.results)}
+                  />
+                )}
 
-              {/* Cluster Type B */}
-              {results.results.cluster_type_b && (
-                <ClusterResultCard
-                  clusterType="b"
-                  label={getClusterLabel('b')}
-                  result={results.results.cluster_type_b}
-                  colorClass={getClusterColor('b')}
-                  badges={getBadges('b', results.results)}
-                />
-              )}
+                {/* Cluster Type B */}
+                {results.results.cluster_type_b && (
+                  <ClusterResultCard
+                    clusterType="b"
+                    label={getClusterLabel('b')}
+                    result={results.results.cluster_type_b}
+                    colorClass={getClusterColor('b')}
+                    badges={getBadges('b', results.results)}
+                  />
+                )}
 
-              {/* Cluster Type C */}
-              {results.results.cluster_type_c && (
-                <ClusterResultCard
-                  clusterType="c"
-                  label={getClusterLabel('c')}
-                  result={results.results.cluster_type_c}
-                  colorClass={getClusterColor('c')}
-                  badges={getBadges('c', results.results)}
-                />
-              )}
-            </div>
+                {/* Cluster Type C */}
+                {results.results.cluster_type_c && (
+                  <ClusterResultCard
+                    clusterType="c"
+                    label={getClusterLabel('c')}
+                    result={results.results.cluster_type_c}
+                    colorClass={getClusterColor('c')}
+                    badges={getBadges('c', results.results)}
+                  />
+                )}
+              </div>
+            )}
           </div>
         )}
 

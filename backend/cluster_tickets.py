@@ -19,25 +19,25 @@ MOCKED COMPONENTS:
 - Embeddings: Can use MockEmbedding if real model unavailable
   (see embedding_interface.py for details)
 
-CLUSTER TYPE A (Coarse / Low-Quality):
-- Algorithm: K-Means with k=5
-- Characteristics: Very few large clusters (5 clusters)
-- Speed: Fastest (O(n*k*d) where k=5)
-- Quality: Lower semantic relevance, coarse groupings
+CLUSTER TYPE A (Coarse / ~100 tickets per cluster):
+- Algorithm: K-Means clustering
+- Characteristics: Clusters sized to ~100 tickets each
+- Speed: Fast (O(n*k*d))
+- Quality: Coarse groupings, good for broad exploration
 - Use Case: Quick filtering, large-scale searches, initial exploration
-- Trade-off: Optimized for speed, sacrifices semantic precision
+- Trade-off: Optimized for speed with moderate cluster sizes
 
-CLUSTER TYPE B (Medium / Balanced):
-- Algorithm: K-Means with k=20
-- Characteristics: Moderate number of clusters (20 clusters)
-- Speed: Moderate (O(n*k*d) where k=20)
-- Quality: Balanced semantic relevance
-- Use Case: General purpose, production use, balanced performance
-- Trade-off: Balanced between speed and quality
+CLUSTER TYPE B (Medium / ~500 tickets per cluster):
+- Algorithm: DBSCAN (Density-Based Spatial Clustering)
+- Characteristics: Clusters sized to ~500 tickets each, density-based
+- Speed: Moderate (O(n log n) with spatial indexing)
+- Quality: Finds natural clusters based on density, handles noise
+- Use Case: General purpose, production use, finds natural groupings
+- Trade-off: Balanced between speed and quality, handles outliers
 
-CLUSTER TYPE C (Fine-Grained / High-Quality):
-- Algorithm: Agglomerative Clustering with n_clusters=100
-- Characteristics: Many small, fine-grained clusters (100 clusters)
+CLUSTER TYPE C (Fine-Grained / ~1000 tickets per cluster):
+- Algorithm: Agglomerative Hierarchical Clustering
+- Characteristics: Clusters sized to ~1000 tickets each
 - Speed: Slowest (O(n^2*d) for hierarchical clustering)
 - Quality: Highest semantic relevance, precise groupings
 - Use Case: Precise searches, high accuracy requirements, detailed analysis
@@ -61,7 +61,7 @@ import numpy as np
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
-from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.cluster import KMeans, AgglomerativeClustering, SpectralClustering
 from sklearn.metrics import silhouette_score, calinski_harabasz_score
 from sentence_transformers import SentenceTransformer
 import argparse
@@ -115,44 +115,47 @@ def generate_embeddings(tickets: List[Dict[str, Any]], batch_size: int = 32) -> 
     return np.vstack(embeddings)
 
 
-def cluster_type_a_coarse(embeddings: np.ndarray, num_clusters: int = 5) -> Tuple[np.ndarray, Dict[str, Any]]:
+def cluster_type_a_coarse(embeddings: np.ndarray, target_size: int = 100) -> Tuple[np.ndarray, Dict[str, Any]]:
     """
-    CLUSTER TYPE A: Coarse / Low-Quality Clusters
+    CLUSTER TYPE A: Coarse Clusters (~100 tickets per cluster)
     
     Algorithm: K-Means clustering
     Parameters:
-        - n_clusters: 5 (very few clusters)
+        - n_clusters: Calculated to achieve ~100 tickets per cluster
         - n_init: 10 (multiple initializations for stability)
         - random_state: 42 (reproducibility)
     
     Characteristics:
-        - Very few large clusters (typically 5)
-        - Fast computation: O(n*k*d) where k=5
-        - Lower semantic relevance due to coarse groupings
-        - Large variance within clusters
+        - Clusters sized to ~100 tickets each
+        - Fast computation: O(n*k*d)
+        - Good for broad exploration
+        - Moderate variance within clusters
     
     Trade-offs:
-        ✅ FASTEST: ~1-5 seconds for 5000 tickets
+        ✅ FAST: ~1-5 seconds for 5000 tickets
         ✅ Low memory usage
         ✅ Good for initial exploration
-        ❌ Lower semantic precision
-        ❌ Large clusters may mix unrelated topics
-        ❌ Less useful for precise similarity search
+        ✅ Consistent cluster sizes
+        ⚠️  Moderate semantic precision
     
     Returns:
         labels: Cluster assignments for each ticket
         metrics: Performance metrics (timing, quality scores)
     """
+    # Calculate number of clusters to achieve target size
+    num_clusters = max(1, int(len(embeddings) / target_size))
+    
     print(f"\n{'='*70}")
-    print(f"CLUSTER TYPE A: Coarse Clustering (k={num_clusters})")
+    print(f"CLUSTER TYPE A: Coarse Clustering (~{target_size} tickets/cluster)")
     print(f"{'='*70}")
-    print("Algorithm: K-Means")
-    print("Characteristics: Very few large clusters, optimized for speed")
+    print(f"Algorithm: K-Means")
+    print(f"Number of clusters: {num_clusters}")
+    print(f"Target size per cluster: ~{target_size} tickets")
     print(f"{'='*70}")
     
     start_time = time.time()
     
-    # K-Means with small k for fast, coarse clustering
+    # K-Means clustering
     kmeans = KMeans(
         n_clusters=num_clusters,
         random_state=42,
@@ -168,116 +171,162 @@ def cluster_type_a_coarse(embeddings: np.ndarray, num_clusters: int = 5) -> Tupl
     
     # Calculate quality metrics
     print("Calculating quality metrics...")
-    silhouette = silhouette_score(embeddings, labels) if len(set(labels)) > 1 else 0.0
-    calinski_harabasz = calinski_harabasz_score(embeddings, labels) if len(set(labels)) > 1 else 0.0
+    unique_labels = set(labels)
+    num_actual_clusters = len(unique_labels)
+    
+    silhouette = silhouette_score(embeddings, labels) if num_actual_clusters > 1 else 0.0
+    calinski_harabasz = calinski_harabasz_score(embeddings, labels) if num_actual_clusters > 1 else 0.0
+    
+    # Calculate actual cluster sizes
+    cluster_sizes = [np.sum(labels == label) for label in unique_labels]
+    avg_size = np.mean(cluster_sizes) if cluster_sizes else 0
     
     metrics = {
         'algorithm': 'K-Means',
-        'num_clusters': num_clusters,
+        'num_clusters': num_actual_clusters,
+        'target_size_per_cluster': target_size,
         'computation_time_seconds': elapsed_time,
         'silhouette_score': float(silhouette),
         'calinski_harabasz_score': float(calinski_harabasz),
-        'avg_tickets_per_cluster': len(embeddings) / num_clusters
+        'avg_tickets_per_cluster': float(avg_size),
+        'min_cluster_size': int(np.min(cluster_sizes)) if cluster_sizes else 0,
+        'max_cluster_size': int(np.max(cluster_sizes)) if cluster_sizes else 0
     }
     
     print(f"✓ Completed in {elapsed_time:.2f} seconds")
     print(f"  Silhouette score: {silhouette:.3f}")
-    print(f"  Average tickets per cluster: {metrics['avg_tickets_per_cluster']:.1f}")
+    print(f"  Average tickets per cluster: {avg_size:.1f}")
+    print(f"  Cluster size range: {metrics['min_cluster_size']} - {metrics['max_cluster_size']}")
     
     return labels, metrics
 
 
-def cluster_type_b_medium(embeddings: np.ndarray, num_clusters: int = 20) -> Tuple[np.ndarray, Dict[str, Any]]:
+def cluster_type_b_medium(embeddings: np.ndarray, target_size: int = 500) -> Tuple[np.ndarray, Dict[str, Any]]:
     """
-    CLUSTER TYPE B: Medium / Balanced Clusters
+    CLUSTER TYPE B: Medium Clusters (~500 tickets per cluster)
     
-    Algorithm: K-Means clustering
+    Algorithm: DBSCAN (Density-Based Spatial Clustering)
     Parameters:
-        - n_clusters: 20 (moderate number of clusters)
-        - n_init: 10 (multiple initializations for stability)
-        - random_state: 42 (reproducibility)
+        - eps: Distance threshold (tuned to achieve ~500 tickets per cluster)
+        - min_samples: Minimum samples in a cluster
+        - metric: 'cosine' for normalized embeddings
     
     Characteristics:
-        - Moderate number of clusters (typically 20)
-        - Balanced computation: O(n*k*d) where k=20
-        - Balanced semantic relevance
-        - Good trade-off between speed and quality
+        - Clusters sized to ~500 tickets each
+        - Density-based clustering finds natural groupings
+        - Handles noise/outliers (assigns -1 label)
+        - Good for finding natural clusters
     
     Trade-offs:
         ✅ MODERATE SPEED: ~5-15 seconds for 5000 tickets
-        ✅ Balanced semantic precision
+        ✅ Finds natural density-based clusters
+        ✅ Handles outliers well
         ✅ Good for production use
-        ✅ Reasonable memory usage
-        ⚠️  Moderate cluster sizes
-        ⚠️  Some mixing of related but distinct topics
+        ⚠️  Requires parameter tuning
+        ⚠️  May produce varying cluster sizes
     
     Returns:
-        labels: Cluster assignments for each ticket
+        labels: Cluster assignments for each ticket (-1 for noise)
         metrics: Performance metrics (timing, quality scores)
     """
+    # Estimate eps to achieve target cluster size
+    # Use a heuristic: sample distances and use percentile
+    from sklearn.neighbors import NearestNeighbors
+    n_neighbors = min(10, len(embeddings) - 1)
+    neighbors = NearestNeighbors(n_neighbors=n_neighbors, metric='cosine')
+    neighbors.fit(embeddings)
+    distances, _ = neighbors.kneighbors(embeddings)
+    distances = distances[:, 1:]  # Exclude self
+    # Use 70th percentile of distances as eps
+    eps = float(np.percentile(distances, 70))
+    min_samples = max(3, int(target_size * 0.1))  # At least 10% of target size
+    
     print(f"\n{'='*70}")
-    print(f"CLUSTER TYPE B: Medium Clustering (k={num_clusters})")
+    print(f"CLUSTER TYPE B: Medium Clustering (~{target_size} tickets/cluster)")
     print(f"{'='*70}")
-    print("Algorithm: K-Means")
-    print("Characteristics: Moderate clusters, balanced speed and quality")
+    print(f"Algorithm: DBSCAN (Density-Based)")
+    print(f"Parameters: eps={eps:.4f}, min_samples={min_samples}")
+    print(f"Target size per cluster: ~{target_size} tickets")
     print(f"{'='*70}")
     
     start_time = time.time()
     
-    # K-Means with moderate k for balanced clustering
-    kmeans = KMeans(
-        n_clusters=num_clusters,
-        random_state=42,
-        n_init=10,
-        max_iter=300,
-        algorithm='lloyd'
+    # DBSCAN clustering
+    print("Running DBSCAN clustering...")
+    dbscan = DBSCAN(
+        eps=eps,
+        min_samples=min_samples,
+        metric='cosine',
+        algorithm='brute'  # Brute force for cosine similarity
     )
     
-    print("Running K-Means clustering...")
-    labels = kmeans.fit_predict(embeddings)
+    labels = dbscan.fit_predict(embeddings)
     
     elapsed_time = time.time() - start_time
     
-    # Calculate quality metrics
+    # Calculate quality metrics (excluding noise points)
     print("Calculating quality metrics...")
-    silhouette = silhouette_score(embeddings, labels) if len(set(labels)) > 1 else 0.0
-    calinski_harabasz = calinski_harabasz_score(embeddings, labels) if len(set(labels)) > 1 else 0.0
+    non_noise_mask = labels != -1
+    num_noise = np.sum(labels == -1)
+    unique_labels = set(labels[non_noise_mask]) if np.any(non_noise_mask) else set()
+    num_actual_clusters = len(unique_labels)
+    
+    if num_actual_clusters > 1 and np.sum(non_noise_mask) > 1:
+        silhouette = silhouette_score(embeddings[non_noise_mask], labels[non_noise_mask])
+        calinski_harabasz = calinski_harabasz_score(embeddings[non_noise_mask], labels[non_noise_mask])
+    else:
+        silhouette = 0.0
+        calinski_harabasz = 0.0
+    
+    # Calculate actual cluster sizes (excluding noise)
+    cluster_sizes = [np.sum(labels == label) for label in unique_labels] if unique_labels else []
+    avg_size = np.mean(cluster_sizes) if cluster_sizes else 0
     
     metrics = {
-        'algorithm': 'K-Means',
-        'num_clusters': num_clusters,
+        'algorithm': 'DBSCAN',
+        'num_clusters': num_actual_clusters,
+        'num_noise_points': int(num_noise),
+        'target_size_per_cluster': target_size,
         'computation_time_seconds': elapsed_time,
         'silhouette_score': float(silhouette),
         'calinski_harabasz_score': float(calinski_harabasz),
-        'avg_tickets_per_cluster': len(embeddings) / num_clusters
+        'avg_tickets_per_cluster': float(avg_size),
+        'min_cluster_size': int(np.min(cluster_sizes)) if cluster_sizes else 0,
+        'max_cluster_size': int(np.max(cluster_sizes)) if cluster_sizes else 0,
+        'eps': eps,
+        'min_samples': min_samples
     }
     
     print(f"✓ Completed in {elapsed_time:.2f} seconds")
+    print(f"  Number of clusters: {num_actual_clusters}")
+    print(f"  Noise points: {num_noise}")
     print(f"  Silhouette score: {silhouette:.3f}")
-    print(f"  Average tickets per cluster: {metrics['avg_tickets_per_cluster']:.1f}")
+    print(f"  Average tickets per cluster: {avg_size:.1f}")
+    if cluster_sizes:
+        print(f"  Cluster size range: {metrics['min_cluster_size']} - {metrics['max_cluster_size']}")
     
     return labels, metrics
 
 
-def cluster_type_c_fine(embeddings: np.ndarray, num_clusters: int = 100) -> Tuple[np.ndarray, Dict[str, Any]]:
+def cluster_type_c_fine(embeddings: np.ndarray, target_size: int = 1000) -> Tuple[np.ndarray, Dict[str, Any]]:
     """
-    CLUSTER TYPE C: Fine-Grained / High-Quality Clusters
+    CLUSTER TYPE C: Fine-Grained Clusters (~1000 tickets per cluster)
     
     Algorithm: Agglomerative Hierarchical Clustering
     Parameters:
-        - n_clusters: 100 (many small clusters)
+        - n_clusters: Calculated to achieve ~1000 tickets per cluster
         - linkage: 'average' (average linkage for balanced clusters)
         - metric: 'cosine' (cosine similarity for embeddings)
     
     Characteristics:
-        - Many small, fine-grained clusters (typically 100)
+        - Clusters sized to ~1000 tickets each
         - Slower computation: O(n^2*d) for hierarchical clustering
         - Highest semantic relevance
         - Precise groupings with low variance within clusters
     
     Trade-offs:
         ✅ HIGHEST QUALITY: Best semantic precision
-        ✅ Small, focused clusters
+        ✅ Large, well-defined clusters
         ✅ Excellent for precise similarity search
         ✅ Low variance within clusters
         ❌ SLOWEST: ~30-120 seconds for 5000 tickets
@@ -288,16 +337,20 @@ def cluster_type_c_fine(embeddings: np.ndarray, num_clusters: int = 100) -> Tupl
         labels: Cluster assignments for each ticket
         metrics: Performance metrics (timing, quality scores)
     """
+    # Calculate number of clusters to achieve target size
+    num_clusters = max(1, int(len(embeddings) / target_size))
+    
     print(f"\n{'='*70}")
-    print(f"CLUSTER TYPE C: Fine-Grained Clustering (k={num_clusters})")
+    print(f"CLUSTER TYPE C: Fine-Grained Clustering (~{target_size} tickets/cluster)")
     print(f"{'='*70}")
-    print("Algorithm: Agglomerative Hierarchical Clustering")
-    print("Characteristics: Many small clusters, optimized for quality")
+    print(f"Algorithm: Agglomerative Hierarchical Clustering")
+    print(f"Number of clusters: {num_clusters}")
+    print(f"Target size per cluster: ~{target_size} tickets")
     print(f"{'='*70}")
     
     start_time = time.time()
     
-    # Agglomerative clustering for high-quality, fine-grained clusters
+    # Agglomerative clustering for high-quality clusters
     # Note: This is computationally expensive but produces better clusters
     print("Running Agglomerative Clustering (this may take a while)...")
     clustering = AgglomerativeClustering(
@@ -313,21 +366,32 @@ def cluster_type_c_fine(embeddings: np.ndarray, num_clusters: int = 100) -> Tupl
     
     # Calculate quality metrics
     print("Calculating quality metrics...")
-    silhouette = silhouette_score(embeddings, labels) if len(set(labels)) > 1 else 0.0
-    calinski_harabasz = calinski_harabasz_score(embeddings, labels) if len(set(labels)) > 1 else 0.0
+    unique_labels = set(labels)
+    num_actual_clusters = len(unique_labels)
+    
+    silhouette = silhouette_score(embeddings, labels) if num_actual_clusters > 1 else 0.0
+    calinski_harabasz = calinski_harabasz_score(embeddings, labels) if num_actual_clusters > 1 else 0.0
+    
+    # Calculate actual cluster sizes
+    cluster_sizes = [np.sum(labels == label) for label in unique_labels]
+    avg_size = np.mean(cluster_sizes) if cluster_sizes else 0
     
     metrics = {
         'algorithm': 'Agglomerative Clustering',
-        'num_clusters': num_clusters,
+        'num_clusters': num_actual_clusters,
+        'target_size_per_cluster': target_size,
         'computation_time_seconds': elapsed_time,
         'silhouette_score': float(silhouette),
         'calinski_harabasz_score': float(calinski_harabasz),
-        'avg_tickets_per_cluster': len(embeddings) / num_clusters
+        'avg_tickets_per_cluster': float(avg_size),
+        'min_cluster_size': int(np.min(cluster_sizes)) if cluster_sizes else 0,
+        'max_cluster_size': int(np.max(cluster_sizes)) if cluster_sizes else 0
     }
     
     print(f"✓ Completed in {elapsed_time:.2f} seconds")
     print(f"  Silhouette score: {silhouette:.3f}")
-    print(f"  Average tickets per cluster: {metrics['avg_tickets_per_cluster']:.1f}")
+    print(f"  Average tickets per cluster: {avg_size:.1f}")
+    print(f"  Cluster size range: {metrics['min_cluster_size']} - {metrics['max_cluster_size']}")
     
     return labels, metrics
 
@@ -362,7 +426,11 @@ def create_cluster_metadata(
     Returns:
         Dictionary with cluster metadata ready for Neo4j ingestion
     """
-    num_clusters = len(set(labels))
+    # Handle DBSCAN noise points (label == -1) - exclude them from clusters
+    unique_labels = set(labels)
+    if -1 in unique_labels:
+        unique_labels.remove(-1)  # Exclude noise points
+    num_clusters = len(unique_labels)
     
     # Map cluster type to granularity level
     granularity_map = {
@@ -373,8 +441,9 @@ def create_cluster_metadata(
     granularity = granularity_map.get(cluster_type, 'medium')
     
     clusters = {}
-    for cluster_id in range(num_clusters):
-        cluster_indices = np.where(labels == cluster_id)[0]
+    cluster_id_counter = 0
+    for label in sorted(unique_labels):
+        cluster_indices = np.where(labels == label)[0]
         cluster_tickets = [tickets[i] for i in cluster_indices]
         cluster_embeddings = embeddings[cluster_indices]
         
@@ -387,15 +456,16 @@ def create_cluster_metadata(
         unique_categories = list(set(categories))
         
         # Generate human-readable label
-        label = f"{most_common_category.replace('_', ' ').title()} Cluster"
+        label_text = f"{most_common_category.replace('_', ' ').title()} Cluster"
         
         # Create cluster metadata matching Neo4j schema
-        cluster_key = f"{cluster_type}_cluster_{cluster_id}"
+        cluster_key = f"{cluster_type}_cluster_{cluster_id_counter}"
         clusters[cluster_key] = {
             "id": cluster_key,  # Neo4j node id
-            "cluster_id": cluster_id,  # Numeric cluster ID
+            "cluster_id": cluster_id_counter,  # Numeric cluster ID (sequential)
+            "original_label": int(label),  # Original clustering label (may not be sequential for DBSCAN)
             "type": cluster_type,
-            "label": label,
+            "label": label_text,
             "granularity_level": granularity,
             "ticket_count": len(cluster_tickets),
             "ticket_ids": [t['id'] for t in cluster_tickets],
@@ -403,6 +473,7 @@ def create_cluster_metadata(
             "dominant_category": most_common_category,
             "categories": unique_categories
         }
+        cluster_id_counter += 1
     
     return {
         "cluster_type": cluster_type,
@@ -435,22 +506,22 @@ def save_clustering_results(
     print("\n" + "=" * 70)
     print("CREATING THREE CLUSTERING STRATEGIES")
     print("=" * 70)
-    print("\nEach strategy uses different algorithms and parameters:")
-    print("  Type A: K-Means (k=5)   → Fast, coarse clusters")
-    print("  Type B: K-Means (k=20)  → Balanced speed and quality")
-    print("  Type C: Agglomerative (k=100) → Slow, fine-grained clusters")
+    print("\nEach strategy uses different algorithms and target cluster sizes:")
+    print("  Type A: K-Means (~100 tickets/cluster)   → Fast, coarse clusters")
+    print("  Type B: DBSCAN (~500 tickets/cluster)    → Density-based, natural clusters")
+    print("  Type C: Agglomerative (~1000 tickets/cluster) → Slow, fine-grained clusters")
     print("=" * 70)
     
-    # Cluster Type A: Coarse (5 clusters) - FASTEST
-    labels_a, metrics_a = cluster_type_a_coarse(embeddings, num_clusters=5)
+    # Cluster Type A: Coarse (~100 tickets per cluster) - FASTEST
+    labels_a, metrics_a = cluster_type_a_coarse(embeddings, target_size=100)
     metadata_a = create_cluster_metadata(tickets, embeddings, labels_a, "A", metrics_a)
     
-    # Cluster Type B: Medium (20 clusters) - BALANCED
-    labels_b, metrics_b = cluster_type_b_medium(embeddings, num_clusters=20)
+    # Cluster Type B: Medium (~500 tickets per cluster) - BALANCED
+    labels_b, metrics_b = cluster_type_b_medium(embeddings, target_size=500)
     metadata_b = create_cluster_metadata(tickets, embeddings, labels_b, "B", metrics_b)
     
-    # Cluster Type C: Fine-grained (100 clusters) - HIGHEST QUALITY
-    labels_c, metrics_c = cluster_type_c_fine(embeddings, num_clusters=100)
+    # Cluster Type C: Fine-grained (~1000 tickets per cluster) - HIGHEST QUALITY
+    labels_c, metrics_c = cluster_type_c_fine(embeddings, target_size=1000)
     metadata_c = create_cluster_metadata(tickets, embeddings, labels_c, "C", metrics_c)
     
     # Add cluster assignments to tickets
