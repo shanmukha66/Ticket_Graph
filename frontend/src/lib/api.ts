@@ -211,6 +211,8 @@ export interface ClusterSearchResponse {
       complexity_score: number;
     };
   };
+  is_relevant?: boolean;
+  relevance_message?: string;
 }
 
 /**

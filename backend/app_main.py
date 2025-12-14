@@ -509,9 +509,9 @@ if __name__ == "__main__":
     print(f"{'='*70}\n")
     
     uvicorn.run(
-        "app:app",
+        app,  # Pass app object directly instead of string
         host=host,
         port=port,
-        reload=True
+        reload=False  # Disable reload when passing app object directly
     )
 

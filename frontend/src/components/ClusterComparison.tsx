@@ -265,6 +265,30 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
           </div>
         )}
 
+        {/* Relevance Warning */}
+        {results && results.is_relevant === false && results.relevance_message && (
+          <div className="bg-yellow-100 border-2 border-yellow-400 rounded-xl p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-yellow-500 rounded-lg flex-shrink-0">
+                <Search className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Query Not Related</h3>
+                <p className="text-yellow-800 mb-3">{results.relevance_message}</p>
+                <div className="text-sm text-yellow-700">
+                  <p className="font-medium mb-2">💡 Try searching for:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Support issues (e.g., "login problem", "payment error")</li>
+                    <li>Bug reports (e.g., "database timeout", "API error")</li>
+                    <li>Feature requests (e.g., "add dark mode", "export data")</li>
+                    <li>Technical issues (e.g., "authentication failed", "connection issue")</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Routing Info */}
         {results?.routing_info && (
           <div className="bg-blue-100 border border-blue-300 rounded-xl p-4 mb-6">
@@ -284,7 +308,7 @@ const ClusterComparison: React.FC<ClusterComparisonProps> = () => {
           </div>
         )}
 
-        {/* Results Comparison */}
+        {/* Results Comparison - Show even if not relevant, but with warning above */}
         {results && (
           <div className="space-y-6">
             {mode === 'single' ? (

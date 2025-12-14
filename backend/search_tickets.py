@@ -379,9 +379,84 @@ class TicketSearcher:
         
         overall_time = time.time() - overall_start
         
+        # Check if query is random/nonsensical
+        def is_random_query(q: str) -> bool:
+            """Detect if query appears to be random/nonsensical."""
+            q_lower = q.lower().strip()
+            
+            # Check for patterns that suggest random text
+            # 1. Repeated characters (e.g., "asdfasdf", "aaaa")
+            if len(set(q_lower)) < len(q_lower) * 0.3 and len(q_lower) > 3:
+                # Check if it's just repeated patterns
+                if len(q_lower) > 4:
+                    # Check for repeated substrings
+                    for i in range(2, len(q_lower) // 2 + 1):
+                        substring = q_lower[:i]
+                        if q_lower.count(substring) > 1 and len(substring) * q_lower.count(substring) >= len(q_lower) * 0.8:
+                            return True
+            
+            # 2. Very few vowels (random keyboard mashing)
+            vowels = sum(1 for c in q_lower if c in 'aeiou')
+            if len(q_lower) > 4 and vowels < len(q_lower) * 0.15:
+                return True
+            
+            # 3. All same character or alternating pattern
+            if len(q_lower) > 3:
+                if len(set(q_lower)) <= 2:
+                    return True
+            
+            # 4. No spaces and very long (likely random typing)
+            if ' ' not in q_lower and len(q_lower) > 8:
+                # Check if it looks like keyboard mashing (adjacent keys)
+                adjacent_count = 0
+                keyboard_rows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm']
+                for i in range(len(q_lower) - 1):
+                    for row in keyboard_rows:
+                        if q_lower[i] in row and q_lower[i+1] in row:
+                            if abs(row.index(q_lower[i]) - row.index(q_lower[i+1])) <= 2:
+                                adjacent_count += 1
+                                break
+                if adjacent_count > len(q_lower) * 0.6:
+                    return True
+            
+            return False
+        
+        # Check if results are relevant
+        # Consider results irrelevant if:
+        # 1. Query appears to be random/nonsensical
+        # 2. Average similarity is very low (< 0.5 or 50%)
+        # 3. Top result similarity is very low (< 0.55 or 55%)
+        # 4. No results found
+        is_relevant = True
+        relevance_message = None
+        
+        all_results = list(results.values())
+        
+        # First check if query is random
+        if is_random_query(query):
+            is_relevant = False
+            relevance_message = "Your query appears to be random text and doesn't relate to any tickets in our database. Please try searching for actual support issues, bugs, or feature requests."
+        elif not all_results or all(len(r['top_k']) == 0 for r in all_results):
+            is_relevant = False
+            relevance_message = "No results found. Your query doesn't match any tickets in our database."
+        else:
+            # Check the best result across all cluster types
+            best_avg_similarity = max(r['avg_similarity'] for r in all_results if r['top_k'])
+            best_top_similarity = max(
+                (t['similarity'] for r in all_results for t in r['top_k']),
+                default=0.0
+            )
+            
+            # Higher thresholds for relevance (50% avg, 55% top)
+            if best_avg_similarity < 0.5 or best_top_similarity < 0.55:
+                is_relevant = False
+                relevance_message = "Your query doesn't seem to relate to any tickets in our database. Please try a different search term related to support tickets, bugs, or feature requests."
+        
         output = {
             'query': query,
-            'results': results
+            'results': results,
+            'is_relevant': is_relevant,
+            'relevance_message': relevance_message
         }
         
         if routing_info:

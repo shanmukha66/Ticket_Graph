@@ -14,10 +14,9 @@ A complete, enterprise-grade **Graph RAG (Retrieval Augmented Generation)** syst
 ---
 
 ## 📋 Table of Contents
+
 - [Overview](#-overview)
-- [Demo Video](#-demo-video)  <!-- Add this line -->
-- [Key Features](#-key-features)
-- [Overview](#-overview)
+- [Demo Video](#-demo-video)
 - [Key Features](#-key-features)
 - [System Architecture](#️-system-architecture)
 - [Data Ingestion Flow](#-data-ingestion-flow)
@@ -56,21 +55,20 @@ This system provides **dual answers** to technical support questions, allowing u
 - **Dual Answer Comparison**: See the difference between generic AI and context-aware responses
 - **Full Provenance**: Every answer includes citations to source tickets and sections
 - **Community Detection**: Automatic clustering using Louvain/Leiden algorithms
+- **Clustering Analytics**: Compare K-Means, Agglomerative, and DBSCAN algorithms
 - **Production Ready**: Complete with error handling, health checks, and monitoring
 - **Interactive Visualization**: Explore the knowledge graph with Cytoscape.js
-- **Production Ready**: Complete with error handling, health checks, and monitoring
-📺 **[Watch our demo video](https://youtu.be/kG4_gxuNLkg)** to see the system in action!
+
 ## 🎥 Demo Video
 
 <div align="center">
   
-[![Watch the Demo](https://img.youtube.com/vi/kG4_gxuNLkg/maxresdefault.jpg)](https://youtu.be/kG4_gxuNLkg)
+[![Watch the Demo](https://img.youtube.com/vi/ZpYMzyuGABs/maxresdefault.jpg)](https://youtu.be/ZpYMzyuGABs)
 
 **Click to watch: Graph RAG Application - Complete Walkthrough**
 
 </div>
 
----
 ---
 
 ## ✨ Key Features
@@ -86,6 +84,8 @@ This system provides **dual answers** to technical support questions, allowing u
 | 📝 **Ticket Citations** | Inline citations with provenance tracking |
 | 🎯 **Smart Context Retrieval** | Vector search + graph traversal (1-N hops) |
 | 🧪 **Clustering Demo** | Compare K-Means, Agglomerative, and DBSCAN algorithms |
+| 🔍 **Ticket Search** | Cluster-aware search with smart routing |
+| 📊 **Benchmarking** | Performance metrics and quality scoring |
 | ⚡ **FastAPI Backend** | Modern async Python with automatic OpenAPI docs |
 | 🔒 **Health Monitoring** | Real-time status checks for all services |
 
@@ -99,6 +99,7 @@ This system provides **dual answers** to technical support questions, allowing u
 | 🎯 **Cluster Filtering** | Click clusters to focus on specific communities |
 | 🌈 **Community Colors** | 10-color palette for visual clustering |
 | 🧪 **Clustering Analytics** | Compare clustering algorithms with performance metrics |
+| 🔍 **Cluster Search** | Search tickets across different cluster types |
 | ⚡ **Parallel Requests** | Simultaneous API calls for faster responses |
 | 📱 **Responsive Design** | Works beautifully on desktop and tablet |
 | 🔄 **Real-time Updates** | Live loading states and smooth transitions |
@@ -111,52 +112,96 @@ The application follows a modern three-tier architecture:
 
 ![System Architecture](architecture.png)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Frontend Layer                           │
-│              React + TypeScript + Tailwind CSS                   │
-│   ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐    │
-│   │  QueryBox    │  │  AnswerCard  │  │   GraphPanel     │    │
-│   │              │  │   (Dual)     │  │  (Cytoscape.js)  │    │
-│   └──────────────┘  └──────────────┘  └──────────────────┘    │
-│                    http://localhost:5173                         │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │ REST API (Axios)
-                          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        Backend Layer                             │
-│                   FastAPI + Python 3.10+                         │
-│   ┌─────────────────────────────────────────────────────┐      │
-│   │  API Endpoints                                       │      │
-│   │  • POST /ingest  - Data ingestion pipeline          │      │
-│   │  • POST /ask     - Dual answer generation           │      │
-│   │  • GET  /graph/subgraph - Graph visualization       │      │
-│   │  • GET  /health  - Service health check             │      │
-│   └─────────────────────────────────────────────────────┘      │
-│                   http://127.0.0.1:8000                          │
-└───┬──────────────────┬──────────────────┬──────────────────────┘
-    │                  │                  │
-    ▼                  ▼                  ▼
-┌─────────┐     ┌──────────────┐   ┌──────────────┐
-│ Neo4j   │     │    FAISS     │   │   OpenAI     │
-│ Graph   │     │    Vector    │   │    GPT-4     │
-│ + GDS   │     │    Store     │   │              │
-└─────────┘     └──────────────┘   └──────────────┘
- (Tickets,        (Embeddings,       (Answer
-  Sections,        Similarity         Generation)
-  Communities)     Search)
+### Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph Frontend["🌐 Frontend Layer - React + TypeScript + Tailwind CSS"]
+        direction TB
+        UI[User Interface<br/>localhost:5173]
+        QueryBox[QueryBox<br/>Search Input]
+        AnswerCard[AnswerCard<br/>Dual Answers]
+        GraphPanel[GraphPanel<br/>Cytoscape.js]
+        ClusteringDemo[ClusteringDemo<br/>Analytics]
+    end
+    
+    subgraph Backend["⚙️ Backend Layer - FastAPI + Python 3.10+"]
+        direction TB
+        API[FastAPI Server<br/>127.0.0.1:8001]
+        Ingest[POST /ingest<br/>Data Ingestion]
+        Ask[POST /ask<br/>Dual Answers]
+        Graph[GET /graph/subgraph<br/>Graph Visualization]
+        Search[POST /search/tickets<br/>Cluster Search]
+        Cluster[POST /clustering-demo/cluster<br/>Clustering Analysis]
+        Health[GET /health<br/>Health Check]
+    end
+    
+    subgraph Services["🔧 Services Layer"]
+        direction LR
+        Embedding[Embedding Service<br/>E5-base-v2<br/>768-dim vectors]
+        VectorStore[FAISS Vector Store<br/>IndexFlatIP<br/>Similarity Search]
+        Neo4j[Neo4j Graph DB<br/>5.22.0+<br/>GDS Plugin]
+        LLM[OpenAI GPT-4<br/>Answer Generation]
+    end
+    
+    UI --> QueryBox
+    UI --> AnswerCard
+    UI --> GraphPanel
+    UI --> ClusteringDemo
+    
+    QueryBox -.->|HTTP/REST<br/>Axios| API
+    AnswerCard -.->|HTTP/REST<br/>Axios| API
+    GraphPanel -.->|HTTP/REST<br/>Axios| API
+    ClusteringDemo -.->|HTTP/REST<br/>Axios| API
+    
+    API --> Ingest
+    API --> Ask
+    API --> Graph
+    API --> Search
+    API --> Cluster
+    API --> Health
+    
+    Ingest --> Embedding
+    Ingest --> VectorStore
+    Ingest --> Neo4j
+    
+    Ask --> Embedding
+    Ask --> VectorStore
+    Ask --> Neo4j
+    Ask --> LLM
+    
+    Graph --> VectorStore
+    Graph --> Neo4j
+    
+    Search --> Embedding
+    Search --> Neo4j
+    
+    Cluster --> Embedding
+    Cluster --> Neo4j
+    
+    style Frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    style Backend fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    style Services fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+    style UI fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    style API fill:#ffe0b2,stroke:#f57c00,stroke-width:2px
+    style Neo4j fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    style VectorStore fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    style Embedding fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    style LLM fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
 ```
 
 ### Technology Stack
 
 **Backend:**
 - **FastAPI** (0.115.6) - Modern Python web framework
-- **Neo4j** (5.x) - Graph database with GDS plugin
+- **Neo4j** (5.27.0) - Graph database with GDS plugin
 - **FAISS** (1.12.0) - Vector similarity search (CPU)
 - **sentence-transformers** (3.3.1) - E5 embedding model
 - **OpenAI** (1.57.4) - GPT-4 for answer generation
 - **Pydantic** (2.10.6) - Data validation
+- **scikit-learn** (1.6.1) - Clustering algorithms
 - **uvicorn** - ASGI server
+- **orjson** (3.10.15) - Fast JSON serialization
 
 **Frontend:**
 - **React** (18.2) - UI framework
@@ -166,6 +211,7 @@ The application follows a modern three-tier architecture:
 - **Cytoscape.js** (3.28) - Graph visualization
 - **Axios** (1.6) - HTTP client
 - **Lucide React** - Icon library
+- **Framer Motion** - Animations
 
 **Database:**
 - **Neo4j** (5.22.0+) with Graph Data Science plugin
@@ -177,81 +223,69 @@ The application follows a modern three-tier architecture:
 
 The system ingests ticket data from CSV/JSONL files and builds a comprehensive knowledge graph:
 
-![Data Ingestion Sequence](Data%20injestion%20sequence%20Diagram.png)
+![Data Ingestion Flow](Data%20injestion%20sequence%20Diagram.png)
 
 ### Ingestion Pipeline Stages
 
-```
-┌──────────────┐
-│ CSV + JSONL  │  Raw ticket data
-│   Files      │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  1. Parse & Validate                             │
-│     • Load tickets and sections                  │
-│     • Validate required fields                   │
-│     • Structure data for graph                   │
-└──────┬───────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  2. Generate Embeddings                          │
-│     • E5-base-v2 model                           │
-│     • 768-dimensional vectors                    │
-│     • Process all section text                   │
-└──────┬───────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  3. Build FAISS Index                            │
-│     • IndexFlatIP (Inner Product)                │
-│     • Store vectors + metadata                   │
-│     • Enable fast similarity search              │
-└──────┬───────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  4. Create Neo4j Graph                           │
-│     • Ticket nodes with properties               │
-│     • Section nodes linked to tickets            │
-│     • HAS_SECTION relationships                  │
-└──────┬───────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  5. Connect Similar Tickets                      │
-│     • Compute cosine similarity                  │
-│     • Create SIMILAR_TO edges                    │
-│     • Filter by threshold (default: 0.7)         │
-│     • Limit top-k per ticket (default: 10)       │
-└──────┬───────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  6. Run Community Detection                      │
-│     • GDS Louvain or Leiden algorithm            │
-│     • Assign community IDs                       │
-│     • Store in ticket properties                 │
-│     • Generate cluster summaries                 │
-└──────┬───────────────────────────────────────────┘
-       │
-       ▼
-┌──────────────────────────────────────────────────┐
-│  Result: Knowledge Graph Ready                   │
-│  • Tickets with sections                         │
-│  • Similarity network                            │
-│  • Community clusters                            │
-│  • Searchable embeddings                         │
-└──────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Start([📄 CSV + JSONL Files<br/>Raw Ticket Data<br/>Tickets & Sections]) --> Parse[1️⃣ Parse & Validate<br/>📋 Load tickets and sections<br/>✓ Validate required fields<br/>🔧 Structure data for graph]
+    
+    Parse --> Embed[2️⃣ Generate Embeddings<br/>🤖 E5-base-v2 model<br/>📊 768-dimensional vectors<br/>📝 Process all section text]
+    
+    Embed --> FAISS[3️⃣ Build FAISS Index<br/>🔍 IndexFlatIP Inner Product<br/>💾 Store vectors + metadata<br/>⚡ Enable fast similarity search]
+    
+    FAISS --> Neo4jNodes[4️⃣ Create Neo4j Graph<br/>🎫 Ticket nodes with properties<br/>📑 Section nodes linked to tickets<br/>🔗 HAS_SECTION relationships]
+    
+    Neo4jNodes --> Similarity[5️⃣ Connect Similar Tickets<br/>📐 Compute cosine similarity<br/>🔗 Create SIMILAR_TO edges<br/>🎯 Filter by threshold 0.7<br/>🔝 Limit top-k per ticket 10]
+    
+    Similarity --> Community[6️⃣ Run Community Detection<br/>🧠 GDS Louvain/Leiden algorithm<br/>🏷️ Assign community IDs<br/>💾 Store in ticket properties<br/>📊 Generate cluster summaries]
+    
+    Community --> End([✅ Knowledge Graph Ready<br/>🎫 Tickets with sections<br/>🕸️ Similarity network<br/>👥 Community clusters<br/>🔍 Searchable embeddings])
+    
+    style Start fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    style Parse fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style Embed fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style FAISS fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Neo4jNodes fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style Similarity fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style Community fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    style End fill:#c8e6c9,stroke:#388e3c,stroke-width:3px
 ```
 
 ### Graph Schema
 
-The Neo4j graph follows this schema:
-
 ![Graph Schema](Graph%20schema.png)
+
+```mermaid
+erDiagram
+    TICKET ||--o{ SECTION : "HAS_SECTION"
+    TICKET ||--o{ TICKET : "SIMILAR_TO"
+    
+    TICKET {
+        string id PK "Unique identifier"
+        string summary "Ticket summary"
+        string status "Status: Open/Closed/Resolved"
+        string priority "Priority level"
+        string project "Project code"
+        string created "Creation timestamp"
+        string updated "Last update timestamp"
+        int communityId "Community cluster ID"
+        string text_for_rag "Full text content"
+    }
+    
+    SECTION {
+        string id PK "Section identifier"
+        string ticket_id FK "Parent ticket ID"
+        string key "Section type: summary/description/resolution"
+        string text "Section content"
+        float[] embedding_vector "768-dim E5 embedding"
+    }
+    
+    SIMILAR_TO {
+        float score "Similarity score 0.0-1.0"
+    }
+```
 
 **Nodes:**
 - `Ticket`: Contains ticket metadata (id, summary, status, priority, etc.)
@@ -276,64 +310,33 @@ When a user asks a question, the system performs a sophisticated multi-stage ret
 
 ### Query Processing Pipeline
 
-```
-┌──────────────┐
-│ User Query   │  "How to fix authentication timeout?"
-└──────┬───────┘
-       │
-       ▼
-┌────────────────────────────────────────────────────┐
-│  1. Embed Query                                    │
-│     • Convert to E5 embedding (768-dim)            │
-│     • Same model as document embeddings            │
-└──────┬─────────────────────────────────────────────┘
-       │
-       ▼
-┌────────────────────────────────────────────────────┐
-│  2. FAISS Vector Search                            │
-│     • Find top-k most similar sections             │
-│     • Returns section IDs + similarity scores      │
-│     • Typical k = 10-20                            │
-└──────┬─────────────────────────────────────────────┘
-       │
-       ▼
-┌────────────────────────────────────────────────────┐
-│  3. Graph Expansion (Neo4j)                        │
-│     • Get tickets owning top sections              │
-│     • Traverse SIMILAR_TO edges (1-2 hops)         │
-│     • Collect all sections from subgraph           │
-│     • Include community information                │
-└──────┬─────────────────────────────────────────────┘
-       │
-       ▼
-┌────────────────────────────────────────────────────┐
-│  4. Context Assembly                               │
-│     • Organize sections by ticket                  │
-│     • Add community cluster info                   │
-│     • Format for LLM prompt                        │
-└──────┬─────────────────────────────────────────────┘
-       │
-       ├──────────────────┬─────────────────────────┐
-       │                  │                         │
-       ▼                  ▼                         ▼
-┌────────────┐    ┌────────────────┐    ┌──────────────────┐
-│  General   │    │  Graph RAG     │    │   Subgraph       │
-│  Answer    │    │  Answer        │    │   for Viz        │
-│            │    │                │    │                  │
-│  GPT-4     │    │  GPT-4 +       │    │  Cytoscape.js    │
-│  No Context│    │  Full Context  │    │  Format          │
-└────────────┘    └────────────────┘    └──────────────────┘
-       │                  │                         │
-       └──────────────────┴─────────────────────────┘
-                          │
-                          ▼
-               ┌────────────────────┐
-               │  Return to User    │
-               │  • Dual answers    │
-               │  • Citations       │
-               │  • Provenance      │
-               │  • Graph visual    │
-               └────────────────────┘
+```mermaid
+flowchart TD
+    Query([👤 User Query<br/>"How to fix authentication timeout?"]) --> Embed[1️⃣ Embed Query<br/>🤖 Convert to E5 embedding<br/>📊 768-dimensional vector<br/>🔄 Same model as documents]
+    
+    Embed --> VectorSearch[2️⃣ FAISS Vector Search<br/>🔍 Find top-k similar sections<br/>📈 Returns section IDs + scores<br/>🎯 Typical k = 10-20]
+    
+    VectorSearch --> GraphExpand[3️⃣ Graph Expansion Neo4j<br/>🎫 Get tickets owning top sections<br/>🕸️ Traverse SIMILAR_TO edges<br/>📏 1-2 hops traversal<br/>👥 Include community information]
+    
+    GraphExpand --> Context[4️⃣ Context Assembly<br/>📋 Organize sections by ticket<br/>🏷️ Add community cluster info<br/>📝 Format for LLM prompt]
+    
+    Context --> General[💜 General Answer<br/>🤖 GPT-4<br/>❌ No Context<br/>📄 Generic response]
+    Context --> GraphRAG[💙 Graph RAG Answer<br/>🤖 GPT-4 + Full Context<br/>✅ With Citations<br/>📚 Evidence-based]
+    Context --> Subgraph[📊 Subgraph for Viz<br/>🎨 Cytoscape.js Format<br/>🕸️ Interactive graph]
+    
+    General --> Response[📤 Return to User<br/>💜 General answer<br/>💙 Graph RAG answer<br/>📝 Ticket citations<br/>🔗 Full provenance<br/>📊 Graph visualization]
+    GraphRAG --> Response
+    Subgraph --> Response
+    
+    style Query fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    style Embed fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style VectorSearch fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style GraphExpand fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style Context fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style General fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style GraphRAG fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Subgraph fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    style Response fill:#c8e6c9,stroke:#388e3c,stroke-width:3px
 ```
 
 ### Dual Answer System
@@ -358,25 +361,22 @@ Get the system running in **under 30 minutes**:
 
 ```bash
 # 1. Clone and setup backend
-cd graph-rag-app
+cd Ticket_Graph
 python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r backend/requirements.txt
 
 # 2. Start Neo4j (Docker method)
-docker run -d \
-  --name graph-rag-neo4j \
-  -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/password123 \
-  -e NEO4J_PLUGINS='["graph-data-science"]' \
-  neo4j:5.22.0
+docker-compose up -d neo4j
+
+# Or use Neo4j Desktop (see Installation section)
 
 # 3. Configure environment
-cp .env.example .env
-# Edit .env: Add OPENAI_API_KEY and NEO4J_PASSWORD
+# Create .env file in project root (see Configuration section)
 
 # 4. Start backend (Terminal 1)
-uvicorn backend.app_main:app --host 127.0.0.1 --port 8001 --reload
+cd backend
+uvicorn app_main:app --host 127.0.0.1 --port 8001 --reload
 
 # 5. Run ingestion (Terminal 2)
 curl -X POST http://127.0.0.1:8001/ingest
@@ -403,6 +403,7 @@ npm run dev
 | **Node.js** | 18+ | Frontend build | [nodejs.org](https://nodejs.org/) |
 | **Neo4j** | 5.x | Graph database | [neo4j.com](https://neo4j.com/download/) |
 | **OpenAI API Key** | - | LLM access | [platform.openai.com](https://platform.openai.com/api-keys) |
+| **Docker** (optional) | - | Neo4j container | [docker.com](https://www.docker.com/) |
 
 ### System Requirements
 
@@ -426,7 +427,7 @@ npm run dev
 
 ```bash
 # Navigate to project directory
-cd /path/to/graph-rag-app
+cd /path/to/Ticket_Graph
 
 # Create virtual environment
 python3 -m venv .venv
@@ -467,6 +468,7 @@ pip install -r backend/requirements.txt
 - FAISS (vector search)
 - OpenAI client
 - Pydantic, orjson (utilities)
+- scikit-learn, scipy (clustering)
 
 ### Step 3: Setup Neo4j Database
 
@@ -497,6 +499,9 @@ pip install -r backend/requirements.txt
 
 ```bash
 # macOS/Linux:
+docker-compose up -d neo4j
+
+# Or manually:
 docker run -d \
   --name graph-rag-neo4j \
   -p 7474:7474 -p 7687:7687 \
@@ -543,8 +548,8 @@ npm install
 Create a `.env` file in the **project root**:
 
 ```bash
-# Copy example file
-cp .env.example .env
+# Copy example file if it exists
+# cp .env.example .env
 ```
 
 Edit `.env` with your values:
@@ -598,7 +603,7 @@ Create `frontend/.env`:
 
 ```bash
 cd frontend
-cp .env.example .env
+# cp .env.example .env  # if example exists
 ```
 
 Edit `frontend/.env`:
@@ -617,8 +622,11 @@ VITE_API_URL=http://127.0.0.1:8001
 # Activate virtual environment
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
+# Navigate to backend
+cd backend
+
 # Start backend with auto-reload
-uvicorn backend.app_main:app --host 127.0.0.1 --port 8001 --reload
+uvicorn app_main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
 **Expected output:**
@@ -814,6 +822,14 @@ In the UI:
 - Comparison table with all 9 combinations
 - Detailed cluster information for each combination
 
+### Test 7: Cluster Search
+
+1. Open http://localhost:5173
+2. Click the **"Cluster Search"** tab
+3. Enter a search query
+4. View results across different cluster types (A, B, C)
+5. Compare performance and quality metrics
+
 ---
 
 ## 📚 API Documentation
@@ -881,6 +897,43 @@ Query parameters:
 - `num_hops` (optional, default=1): Graph traversal depth
 - `include_communities` (optional, default=true)
 
+#### `POST /search/tickets`
+**Cluster-aware ticket search**
+
+Request body:
+```json
+{
+  "query": "login issue",
+  "top_k": 10,
+  "use_smart_routing": true,
+  "apply_feedback_boost": true
+}
+```
+
+#### `POST /clustering-demo/cluster`
+**Run clustering analysis**
+
+Request body:
+```json
+{
+  "query": "login issue",
+  "top_k": 1000,
+  "subset_size": 100,
+  "algorithm": "kmeans"
+}
+```
+
+#### `GET /clustering-demo/stats`
+**Get clustering statistics**
+
+Returns total tickets, available subset sizes, and algorithms.
+
+#### `POST /benchmark/query`
+**Benchmark query across cluster types**
+
+#### `GET /benchmark/stats`
+**Get cluster statistics and quality metrics**
+
 See [backend/API_README.md](backend/API_README.md) for complete API documentation.
 
 ---
@@ -919,67 +972,6 @@ The Clustering Demo feature allows you to compare different clustering algorithm
      }'
    ```
 
-### API Endpoints
-
-#### `POST /clustering-demo/cluster`
-Run clustering analysis on tickets relevant to a query.
-
-**Request Body:**
-```json
-{
-  "query": "login issue",
-  "top_k": 1000,
-  "subset_size": 100,      // Optional: 100, 500, 1000, or null for all
-  "algorithm": "kmeans"    // Optional: "kmeans", "agglomerative", "dbscan", or null for all
-}
-```
-
-**Response:**
-```json
-{
-  "query": "login issue",
-  "results": {
-    "A_kmeans": {
-      "subset_size": 100,
-      "algorithm": "kmeans",
-      "num_clusters": 10,
-      "computation_time_ms": 33.86,
-      "query_time_ms": 36.56,
-      "total_time_ms": 70.43,
-      "clusters": [...],
-      "metrics": {
-        "silhouette_score": 0.498,
-        "avg_cluster_size": 10.0
-      }
-    },
-    ...
-  },
-  "summary": {
-    "total_combinations": 9,
-    "fastest": "A_dbscan",
-    "fastest_time_ms": 32.87,
-    "best_quality": "A_dbscan",
-    "best_quality_score": 0.552,
-    "most_clusters": "A_kmeans",
-    "most_clusters_count": 10
-  }
-}
-```
-
-#### `GET /clustering-demo/stats`
-Get statistics about available tickets in Neo4j.
-
-**Response:**
-```json
-{
-  "total_tickets": 5018,
-  "tickets_with_embeddings": 5000,
-  "top_categories": [...],
-  "available_subset_sizes": [100, 500, 1000],
-  "available_algorithms": ["kmeans", "agglomerative", "dbscan"]
-}
-```
-
 ### Clustering Algorithms
 
 | Algorithm | Description | Use Case |
@@ -1001,25 +993,7 @@ The demo automatically runs all 9 combinations (3 subset sizes × 3 algorithms) 
 - **Best Quality**: Highest silhouette score
 - **Most Clusters**: Maximum number of clusters found
 
-### Neo4j Queries
-
-For querying clustering results in Neo4j, see [neo4j_clustering_queries.cypher](neo4j_clustering_queries.cypher) for comprehensive Cypher queries.
-
-**Quick Examples:**
-
-```cypher
-// Get all clusters of type A (100 tickets, K-Means)
-MATCH (c:Cluster {type: 'A'})
-RETURN c.id, c.label, c.ticket_count
-ORDER BY c.ticket_count DESC;
-
-// Compare all clustering combinations
-MATCH (c:Cluster)
-RETURN c.type AS subset_type,
-       count(c) AS num_clusters,
-       avg(c.ticket_count) AS avg_cluster_size
-ORDER BY c.type;
-```
+For more details, see [CLUSTERING_DEMO_README.md](CLUSTERING_DEMO_README.md).
 
 ---
 
@@ -1036,6 +1010,7 @@ ORDER BY c.type;
 | **TicketDetailsPanel** | Detailed ticket information on click |
 | **ClusteringDemo** | Clustering algorithm comparison interface |
 | **ClusterComparison** | Pre-computed cluster comparison view |
+| **SkeletonLoader** | Loading states for better UX |
 
 ### Design System
 
@@ -1074,14 +1049,13 @@ See [frontend/README.md](frontend/README.md) for component documentation.
 ## 📁 Project Structure
 
 ```
-graph-rag-app/
+Ticket_Graph/
 ├── README.md                           # This file
 ├── SETUP_GUIDE.md                      # Detailed setup walkthrough
-├── architecture.png                    # System architecture diagram
-├── Data injestion sequence Diagram.png # Ingestion flow diagram
-├── Retreval sequence diagram.png       # Query retrieval diagram
-├── Graph schema.png                    # Neo4j graph schema
-├── .env.example                        # Environment template
+├── DEMO_GUIDE.md                        # Demo usage guide
+├── CLUSTERING_DEMO_README.md            # Clustering demo guide
+├── ARCHITECTURE.md                      # System architecture details
+├── docker-compose.yml                  # Docker Compose configuration
 ├── .gitignore                          # Git ignore rules
 │
 ├── backend/                            # Python backend
@@ -1095,7 +1069,10 @@ graph-rag-app/
 │   │   ├── api/                        # API endpoints
 │   │   │   ├── embeddings.py
 │   │   │   ├── graph.py
-│   │   │   └── search.py
+│   │   │   ├── search.py
+│   │   │   ├── ticket_search.py
+│   │   │   ├── benchmark.py
+│   │   │   └── clustering_demo.py
 │   │   ├── core/                       # Configuration
 │   │   │   └── config.py
 │   │   ├── models/                     # Pydantic schemas
@@ -1116,8 +1093,8 @@ graph-rag-app/
 │   │
 │   ├── ingestors/                      # Data ingestion
 │   │   ├── load_csv.py                 # CSV loader
-│   │   ├── load_jsonl.py               # JSONL loader
-│   │   └── schema_template.yml         # Section definitions
+│   │   ├── load_jsonl.py              # JSONL loader
+│   │   └── schema_template.yml        # Section definitions
 │   │
 │   ├── retrieval/                      # Vector search
 │   │   ├── embedder.py                 # E5 embeddings
@@ -1156,6 +1133,8 @@ graph-rag-app/
 │       │   ├── TicketDetailsPanel.tsx
 │       │   ├── Button.tsx
 │       │   ├── SkeletonLoader.tsx
+│       │   ├── ClusteringDemo.tsx
+│       │   ├── ClusterComparison.tsx
 │       │   └── ui/                     # UI primitives
 │       │       ├── skeleton.tsx
 │       │       └── toast.tsx
@@ -1166,11 +1145,6 @@ graph-rag-app/
 │       │
 │       └── types/                      # TypeScript types
 │           └── index.ts
-│
-├── mnt/                                # Data files
-│   └── data/
-│       ├── jira_issues_clean.csv
-│       └── jira_issues_rag.jsonl
 │
 ├── Phases/                             # Documentation
 │   ├── PHASE1_COMPLETE.md
@@ -1461,7 +1435,7 @@ Get-Process -Id (Get-NetTCPConnection -LocalPort 8001).OwningProcess | Stop-Proc
 
 ### Docker Compose (Production)
 
-Create `docker-compose.yml`:
+The project includes a `docker-compose.yml` file for Neo4j. To deploy the full stack:
 
 ```yaml
 version: '3.8'
@@ -1578,6 +1552,8 @@ Built with amazing open-source technologies:
 - [Frontend README](frontend/README.md) - Frontend components
 - [API Documentation](backend/API_README.md) - Endpoint details
 - [Setup Guide](SETUP_GUIDE.md) - Step-by-step walkthrough
+- [Demo Guide](DEMO_GUIDE.md) - Demo usage instructions
+- [Clustering Demo Guide](CLUSTERING_DEMO_README.md) - Clustering demo details
 - [Graph Module](backend/graph/README.md) - Neo4j operations
 
 ### Phase Documentation
@@ -1613,12 +1589,14 @@ Complete implementation notes:
 | Phase 5: FastAPI Application | ✅ Complete | Integrated |
 | Phase 6: Frontend (Beautiful UI) | ✅ Complete | [PHASE6](Phases/PHASE6_COMPLETE.md) |
 | Phase 7: Run & Verify | ✅ Complete | [PHASE7](Phases/PHASE7_COMPLETE.md) |
+| Phase 8: Clustering Demo | ✅ Complete | [PHASE8](Phases/PHASE8_COMPLETE.md) |
 
 ### System Features
 
 ✅ **Backend**: FastAPI + Neo4j + FAISS + E5 + GPT-4  
 ✅ **Frontend**: React + TypeScript + Tailwind + Cytoscape  
 ✅ **Clustering Demo**: K-Means, Agglomerative, DBSCAN comparison  
+✅ **Cluster Search**: Multi-cluster type search with benchmarking  
 ✅ **Documentation**: 2000+ lines across 10+ files  
 ✅ **Troubleshooting**: 8+ scenarios covered  
 ✅ **Testing**: Manual test checklist provided  
@@ -1626,3 +1604,4 @@ Complete implementation notes:
 
 ---
 
+**Ready to get started?** Follow the [Quick Start](#-quick-start) guide or see [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions!

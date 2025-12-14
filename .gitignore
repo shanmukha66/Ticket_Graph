@@ -83,6 +83,36 @@ logs/
 *.bak
 
 # ============================================
+# Media Files (Videos, Large Files)
+# ============================================
+# Video files - Too large for git
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.flv
+*.wmv
+
+# Audio files
+*.mp3
+*.wav
+*.flac
+*.aac
+
+# Presentation files (may contain large media)
+*.pptx
+*.ppt
+*.key
+
+# PDF files (if large)
+*.pdf
+
+# Important remaining files folder (contains videos and large files)
+*1*(IMPORTANT) REMAINING FILES AT ONE PLACE/
+*REMAINING FILES AT ONE PLACE*/
+
+# ============================================
 # Keep these
 # ============================================
 !.env.example
